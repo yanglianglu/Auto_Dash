@@ -1,0 +1,4 @@
+.idea
+data/embeddings/*
+data/processed/*
+data/raw/*
