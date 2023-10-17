@@ -1,0 +1,46 @@
+version: '3.7'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.15.0
+    container_name: elasticsearch-single-node
+    environment:
+      - node.name=elasticsearch1
+      - cluster.name=es-docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "discovery.type=single-node"  # Essential for single-node
+      - ELASTIC_PASSWORD=abcdefg  # Setting password explicitly
+      - xpack.security.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"  # Binding to localhost
+      - "9300:9300"
+    networks:
+      - es-net
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.15.0
+    container_name: kibana
+    environment:
+      ELASTICSEARCH_URL: "http://elasticsearch:9200"
+      ELASTICSEARCH_USERNAME: "elastic"
+      ELASTICSEARCH_PASSWORD: "abcdefg"  # Setting password explicitly
+    ports:
+      - "5601:5601"  # Binding to localhost
+    networks:
+      - es-net
+    depends_on:
+      - elasticsearch
+
+networks:
+  es-net:
+    driver: bridge
+
+volumes:
+  es-data:
+    driver: local
