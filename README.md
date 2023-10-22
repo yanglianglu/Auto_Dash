@@ -66,3 +66,16 @@ AutoDash/
    - **preprocessing/**: Text preprocessing functions.
    - **models/**: Machine learning and NLP models.
    - **dashboard/**: Code to create and manage the dashboard.
+
+## dependencies
+1. Python 3.11
+2. Elasticsearch 7.15.0
+
+
+
+## Setup
+1. Run docker-compose up -d to start the elasticsearch container
+   - elasticsearch is available at http://localhost:9200
+   - kibana is available at http://localhost:5601
+   - username: elastic, password: abcdefg
+   - we usually don't interact with elasticsearch directly, but it's useful for visual inspection of the data
