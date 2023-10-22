@@ -3,8 +3,8 @@ from elasticsearch import Elasticsearch, helpers
 
 # Create a Elasticsearch Client
 def create_client():
-    client = Elasticsearch([{"host": "localhost", "port": 9200, "scheme": "http", 'use_ssl': False}],
-                           http_auth=('elastic', 'abcdefg')
+    client = Elasticsearch([{"host": "localhost", "port": 9200, "scheme": "http"}],
+                           basic_auth=('elastic', 'abcdefg')
                            )
     return client
 
