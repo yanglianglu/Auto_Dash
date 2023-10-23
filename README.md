@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-
-```plaintext
 AutoDash/
 |-- .gitignore
 |-- README.md
