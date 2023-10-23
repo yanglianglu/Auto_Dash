@@ -1,5 +1,3 @@
-<<<<<<< HEAD
-
 ```plaintext
 AutoDash/
 |-- .gitignore
