@@ -144,12 +144,13 @@ def processDocumentUrl(driver, url):
     if driver.find_elements(By.XPATH, "//div[contains(@class, 'caas-readmore')]//*[text()='Continue reading']"):
         body = driver.find_element(By.CLASS_NAME, "caas-body")
         text = body.find_elements(By.TAG_NAME, 'p')
+        a = body.find_elements(By.TAG_NAME, "a")
         print("External link")
         return {
             'base_url': url,
             'title': title,
             'body': "\n".join([p.text for p in text]),
-            'urls': []
+            'urls': [_.get_attribute('href') for _ in a]
         }
 
     readMoreButtons = driver.find_elements(By.XPATH, "//div[contains(@class, 'caas-readmore')]//button")
@@ -160,12 +161,13 @@ def processDocumentUrl(driver, url):
 
     body = driver.find_element(By.CLASS_NAME, "caas-body")
     text = body.find_elements(By.TAG_NAME, 'p')
-    
+    a = body.find_elements(By.TAG_NAME, "a")
+
     return {
         'base_url': url,
         'title': title,
         'body': "\n".join([p.text for p in text]),
-        'urls': []
+        'urls': [_.get_attribute('href') for _ in a]
     }
 
 
@@ -210,10 +212,10 @@ def processUrls(urls):
 # f.close()
 
 
-# f = open("urls.txt", "r")
-# urls = f.read().rstrip().split("\n")
-# docs = processUrls(urls)
+f = open("urls.txt", "r")
+urls = f.read().rstrip().split("\n")
+docs = processUrls(urls)
 
-# print(docs[0]['body'])
+print(docs[0]['body'])
 
 
