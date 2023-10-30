@@ -1,0 +1,7 @@
+elasticsearch==8.10.1
+selenium==4.14.0
+webdriver-manager==4.0.1
+
+torch~=2.1.0
+numpy~=1.26.1
+nltk~=3.8.1
