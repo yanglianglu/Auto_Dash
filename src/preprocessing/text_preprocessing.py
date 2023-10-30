@@ -29,5 +29,5 @@ def preprocess_text(text):
 
 
 text = "Text preprocessing in PyTorch involves stemming and removing stop words."
-preprocessed__text = preprocess_text(text)
-print(preprocessed__text)
+preprocessed_text = preprocess_text(text)
+print(preprocessed_text)
