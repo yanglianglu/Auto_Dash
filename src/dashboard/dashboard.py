@@ -54,13 +54,18 @@ def update_pages(n_clicks, query):
 
 @app.callback(
     [Output('document-list', 'children'), Output('query-input2', 'value')],
-    Input('search-btn', 'n_clicks'),
-    State('query-input', 'value'),
+    [Input('search-btn', 'n_clicks'), Input('search-btn2', 'n_clicks')],
+    [State('query-input', 'value'), State('query-input2', 'value')],
 )
-def update_results(n_clicks, query):
-    print('update_results', n_clicks, query)
-    if n_clicks == 0:
-        return [[], query]
+def update_results(n_clicks, n_clicks2, query, query2):
+    print('update_results', ctx.triggered_id,
+          n_clicks, n_clicks2, query, query2)
+    if ctx.triggered_id is None:
+        return [[], '']
+    if ctx.triggered_id == 'search-btn':
+        query = query
+    elif ctx.triggered_id == 'search-btn2':
+        query = query2
 
     documents = data_api.getDocuments(query)
 
