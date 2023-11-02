@@ -34,7 +34,9 @@ app.layout = html.Div([
             html.Button('Search', id='search-btn2',
                         n_clicks=0, className='button'),
         ], className='topbar'),
-        html.Div(children=[], className='searchresults', id='document-list')
+        html.Div(children=[], className='searchresults', id='document-list'),
+        html.Div(children=[], className='summaryresults', id='summary-list'),
+        html.Div(children=[], className='sentimentresults', id='sentiment'),
     ], id='results-page', style={'display': 'none'}),
 ])
 
@@ -53,7 +55,10 @@ def update_pages(n_clicks, query):
 
 
 @app.callback(
-    [Output('document-list', 'children'), Output('query-input2', 'value')],
+    [Output('document-list', 'children'),
+     Output('query-input2', 'value'),
+     Output('summary-list', 'children'),
+     Output('sentiment', 'children')],
     [Input('search-btn', 'n_clicks'), Input('search-btn2', 'n_clicks')],
     [State('query-input', 'value'), State('query-input2', 'value')],
 )
@@ -61,7 +66,7 @@ def update_results(n_clicks, n_clicks2, query, query2):
     print('update_results', ctx.triggered_id,
           n_clicks, n_clicks2, query, query2)
     if ctx.triggered_id is None:
-        return [[], '']
+        return [[], '', [], []]
     if ctx.triggered_id == 'search-btn':
         query = query
     elif ctx.triggered_id == 'search-btn2':
@@ -78,7 +83,22 @@ def update_results(n_clicks, n_clicks2, query, query2):
             html.P(result['description'])
         ], className='searchresult'))
 
-    return [results, query]
+    summary = data_api.getSummarization(query)
+    summaryresults = []
+    print(summary)
+    for word in summary:
+        summaryresults.append(html.Div(children=[
+            html.Div(word['term']),
+            html.Div(word['weight'])
+        ]))
+
+    sentiment = data_api.getSentiment(query)
+    sentimentresults = [
+        html.Div('Sentiment: '),
+        html.Div(sentiment)
+    ]
+
+    return [results, query, summaryresults, sentimentresults]
 
 
 if __name__ == '__main__':

@@ -20,3 +20,16 @@ def getDocuments(query):
         ]
     }
     return fake_documents
+
+
+def getSummarization(query):
+    import random
+    words = []
+    for i in range(5):
+        words.append({'term': f'{query}{i+1}', 'weight': random.random()})
+    return words
+
+
+def getSentiment(query):
+    import random
+    return random.random()
