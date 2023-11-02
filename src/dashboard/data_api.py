@@ -4,12 +4,12 @@ def getDocuments(query):
         'results': [
             {
                 'title': f'{query}',
-                'url': f'https://www {query}.com/',
+                'url': f'https://www.{query}.com/',
                 'description': f'About {query} About {query} + ... More ways to shop: Find an {query} Store or other retailer near you. Or call 1-800-MY {query}.'
             },
             {
                 'title': f'{query} Inc.',
-                'url': f'https://en.wikipedia.org/wiki {query}_Inc.',
+                'url': f'https://en.wikipedia.org/wiki/{query}_Inc.',
                 'description': f'{query} Inc. is an American multinational technology company headquartered in Cupertino, California. As of March 2023, {query} is the worlds biggest company by ...'
             },
             {
