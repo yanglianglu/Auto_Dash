@@ -12,7 +12,18 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 from bs4 import BeautifulSoup 
 import requests
-import re
+
+
+import sys
+import os
+ 
+# getting the name of the directory
+# where the this file is present.
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+
+import utils.database_utils as db
 
 numOfRetries = 3
 
@@ -264,15 +275,28 @@ def mineNewsUrls():
     return res
 
 def mineData():
+    client = db.create_client()
+    
+    if not client.indices.exists(index="documents"):
+        db.create_index(client, "documents")
+
     visited = set()
     urls = mineNewsUrls()
-    res = []
+    count = 0
     while urls:
         url = urls.pop(0)
         if url not in visited and 'https://finance.yahoo.com' in url:
             doc = processDocumentUrl(url)
             if doc:
-                res.append(doc)
+                count = count + 1
+                try:
+                    db.get_document(client, "documents", url)
+                except:
+                    db.index_document(client, "documents", url, doc)
+                    print('Document inserted into elasticsearch')
                 urls.extend(doc['urls'])
             visited.add(url)
-    return res
+
+# Example Usage
+if __name__ == "__main__":
+    mineData()
