@@ -3,7 +3,7 @@ import json
 import dash
 from dash import dcc, html, dash_table, ctx
 from dash.dependencies import Input, Output, State, ALL
-import data_api
+import dashboard.data_api as data_api
 
 app = dash.Dash(__name__)
 
@@ -72,7 +72,9 @@ def update_results(n_clicks, n_clicks2, query, query2):
     elif ctx.triggered_id == 'search-btn2':
         query = query2
 
+    print(f'getDocuments {query}')
     documents = data_api.getDocuments(query)
+    print(f'documents {documents}')
 
     results = []
 
