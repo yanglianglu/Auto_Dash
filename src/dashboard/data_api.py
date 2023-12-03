@@ -1,7 +1,12 @@
-from search.scrape_documents import getDocumentsUrls
 import time
+import pandas as pd
+from collections import Counter
 
-MOCK_DATA = True
+from search.scrape_documents import getDocumentsUrls, processDocumentUrl
+import models.sentiment_model as sentiment_model
+import models.summarization_model as summarization_model
+
+MOCK_DATA = False
 
 MOCK_DOCUMENTS = {
     'total': 10,
@@ -17,14 +22,64 @@ def getDocuments(query):
     return MOCK_DOCUMENTS
 
 
-def getSummarization(query):
-    import random
-    words = []
-    for i in range(5):
-        words.append({'term': f'{query}{i+1}', 'weight': random.random()})
-    return words
+summarizer = summarization_model.init_model()
 
 
-def getSentiment(query):
+def getSummarization(result):
+    if result["scraped"] is None:
+        return 'Failed to scrape'
+    # return 'summary'
+    summary = summarization_model.inference(
+        summarizer, result["scraped"]['body'])
+    print(f'summary: {summary}')
+    return summary
+
+
+def getTopics(documents):
+    cnt = Counter()
+    total = 0
+    for result in documents['results']:
+        if result["scraped"] is None:
+            continue
+        for keyword in result["scraped"]['keywords']:
+            cnt[keyword] += 1
+            total += 1
+    return [{'term': key, 'weight': value / total}
+            for key, value in cnt.items()]
+
+    # import random
+    # words = []
+    # for i in range(5):
+    #     words.append({'term': f'{query}{i+1}', 'weight': random.random()})
+    # return words
+
+
+sentiment = sentiment_model.LogisticRegressionModel() if not MOCK_DATA else None
+
+
+def getSentiment(documents):
+    if MOCK_DATA:
+        import random
+        return random.random()
+
+    results = []
+    df_data = []
+    for doc in documents['results']:
+        df_data.append(doc['summary'])
+
+    df = pd.DataFrame(df_data, columns=["Text"])
+    results = sentiment.predict(df)
+    print(f'getSentiment {results} {results[0]}')
+
+    if results[0] == 'neutral':
+        return 0.5
+    elif results[0] == 'positive':
+        return 1.0
+    elif results[0] == 'negative':
+        return 0.0
+    else:
+        print('unknown sentiment')
+        return 0.5
+
     import random
     return random.random()

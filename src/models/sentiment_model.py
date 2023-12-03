@@ -1,3 +1,11 @@
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import utils.database_utils as db
 import sys
 import os
 
@@ -7,22 +15,12 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
-import utils.database_utils as db
-
-import pandas as pd
-
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import GridSearchCV
-
 
 class LogisticRegressionModel:
     def __init__(self):
 
-        df = pd.read_csv("./sentiment-training-data.csv", delimiter=",", encoding="latin-1")
+        df = pd.read_csv(os.path.join(
+            os.path.dirname(__file__), "./sentiment-training-data.csv"), delimiter=",", encoding="latin-1")
         df = df.rename(
             columns={
                 "neutral": "Sentiment",
@@ -30,7 +28,8 @@ class LogisticRegressionModel:
             }
         )
 
-        train_df, test_df = train_test_split(df, test_size=0.2, random_state=123)
+        train_df, test_df = train_test_split(
+            df, test_size=0.2, random_state=123)
         X_train = train_df["Sentence"]
         X_test = test_df["Sentence"]
         y_train = train_df["Sentiment"]
@@ -56,13 +55,14 @@ class LogisticRegressionModel:
         print("Optimized Hyperparameters: ", grid_cv_pipe.best_params_)
 
         self.model = grid_cv_pipe
-    
+
     # # Accuracy
     # pred = grid_cv_pipe.predict(X_test)
     # print("Optimized Accuracy Score: {0: .3f}".format(accuracy_score(y_test, pred)))
 
     def predict(self, x):
         return self.model.predict(x)
+
 
 # Example Usage
 if __name__ == "__main__":
