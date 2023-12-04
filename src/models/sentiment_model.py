@@ -1,5 +1,6 @@
 import sys
 import os
+import pickle
 
 # getting the name of the directory
 # where the this file is present.
@@ -18,11 +19,20 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import GridSearchCV
 
+filename = "sentiment_model.pickle"
+
 
 class LogisticRegressionModel:
     def __init__(self):
+        if not os.path.isfile(filename):
+            self.train()
+            pickle.dump(self.model, open(filename, "wb"))
+        self.model = pickle.load(open(filename, "rb"))
 
-        df = pd.read_csv("./sentiment-training-data.csv", delimiter=",", encoding="latin-1")
+    def train(self):
+        df = pd.read_csv(
+            "./sentiment-training-data.csv", delimiter=",", encoding="latin-1"
+        )
         df = df.rename(
             columns={
                 "neutral": "Sentiment",
@@ -56,7 +66,7 @@ class LogisticRegressionModel:
         print("Optimized Hyperparameters: ", grid_cv_pipe.best_params_)
 
         self.model = grid_cv_pipe
-    
+
     # # Accuracy
     # pred = grid_cv_pipe.predict(X_test)
     # print("Optimized Accuracy Score: {0: .3f}".format(accuracy_score(y_test, pred)))
@@ -64,9 +74,9 @@ class LogisticRegressionModel:
     def predict(self, x):
         return self.model.predict(x)
 
+
 # Example Usage
 if __name__ == "__main__":
-
     # Get documents from elasticsearch
     client = db.create_client()
     res = db.search_documents(client, "documents", {"match_all": {}})
