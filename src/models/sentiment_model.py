@@ -8,6 +8,7 @@ import pandas as pd
 import utils.database_utils as db
 import sys
 import os
+import pickle
 
 # getting the name of the directory
 # where the this file is present.
@@ -16,11 +17,23 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 
 
+filename = "sentiment_model.pickle"
+
+
 class LogisticRegressionModel:
     def __init__(self):
+        if not os.path.isfile(filename):
+            self.train()
+            pickle.dump(self.model, open(filename, "wb"))
+        self.model = pickle.load(open(filename, "rb"))
 
-        df = pd.read_csv(os.path.join(
-            os.path.dirname(__file__), "./sentiment-training-data.csv"), delimiter=",", encoding="latin-1")
+    def train(self):
+        df = pd.read_csv(
+            os.path.join(os.path.dirname(__file__), "./sentiment-training-data.csv"),
+            delimiter=",",
+            encoding="latin-1",
+        )
+
         df = df.rename(
             columns={
                 "neutral": "Sentiment",
@@ -28,8 +41,7 @@ class LogisticRegressionModel:
             }
         )
 
-        train_df, test_df = train_test_split(
-            df, test_size=0.2, random_state=123)
+        train_df, test_df = train_test_split(df, test_size=0.2, random_state=123)
         X_train = train_df["Sentence"]
         X_test = test_df["Sentence"]
         y_train = train_df["Sentiment"]
@@ -66,7 +78,6 @@ class LogisticRegressionModel:
 
 # Example Usage
 if __name__ == "__main__":
-
     # Get documents from elasticsearch
     client = db.create_client()
     res = db.search_documents(client, "documents", {"match_all": {}})
