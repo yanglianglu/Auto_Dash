@@ -1,3 +1,4 @@
+import utils.database_utils as db
 import time
 
 from selenium import webdriver
@@ -10,22 +11,22 @@ from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-from bs4 import BeautifulSoup 
+from bs4 import BeautifulSoup
 import requests
 
 
 import sys
 import os
- 
+
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
-import utils.database_utils as db
 
 numOfRetries = 3
+
 
 def initBrowser():
     WINDOW_SIZE = "1920,1080"
@@ -34,7 +35,8 @@ def initBrowser():
     chrome_options.add_argument("--window-size=%s" % WINDOW_SIZE)
     chrome_options.add_argument("no-sandbox")
     chrome_options.add_argument("--disable-extensions")
-    driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=chrome_options)
+    driver = webdriver.Chrome(service=ChromeService(
+        ChromeDriverManager().install()), options=chrome_options)
     return driver
 
 
@@ -46,7 +48,7 @@ def initBrowser():
 #     'https://finance.yahoo.com/news/iphone-assembler-hon-hai-dives-010601477.html',
 #     'https://finance.yahoo.com/m/05189731-ff16-33e1-b077-dfead8ad1cb9/paypal-s-new-boss.html',
 # ]
-def getDocumentsUrls(keyword, n):  
+def getDocumentsUrls(keyword, n):
     """
     :param string keyword: keyword to search
     :param int n: number of docs to return
@@ -87,22 +89,26 @@ def getDocumentsUrls(keyword, n):
         driver.quit()
         return []
 
-    searchBar = driver.find_element(By.XPATH, "//form[contains(@action, '/quote')]")
+    searchBar = driver.find_element(
+        By.XPATH, "//form[contains(@action, '/quote')]")
     searchBarInput = searchBar.find_element(By.TAG_NAME, "input")
     searchBarInput.send_keys(keyword)
-    searchBarButton = searchBar.find_element(By.ID, "header-desktop-search-button")
+    searchBarButton = searchBar.find_element(
+        By.ID, "header-desktop-search-button")
     searchBarButton.click()
 
     try:
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]"))
+            EC.presence_of_element_located(
+                (By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]"))
         )
     except:
         print("Could not load results")
         driver.quit()
         return []
-    
-    resultsDiv = driver.find_element(By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]")
+
+    resultsDiv = driver.find_element(
+        By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]")
     results = resultsDiv.find_elements(By.TAG_NAME, "li")
     filteredResults = []
     for result in results:
@@ -111,14 +117,14 @@ def getDocumentsUrls(keyword, n):
         except:
             filteredResults.append(result)
 
-    prev  = 0
+    prev = 0
     while len(filteredResults) < n:
         print("{} urls found".format(len(filteredResults)))
         if (prev == len(filteredResults)):
             print("Maximum number of documents found related to " + keyword)
             break
         prev = len(filteredResults)
-        driver.execute_script("arguments[0].scrollIntoView();",results[-1])
+        driver.execute_script("arguments[0].scrollIntoView();", results[-1])
         time.sleep(1)
 
         results = resultsDiv.find_elements(By.TAG_NAME, "li")
@@ -134,10 +140,18 @@ def getDocumentsUrls(keyword, n):
     res = []
     for result in filteredResults[:n]:
         a = result.find_element(By.TAG_NAME, "a")
-        res.append(a.get_attribute('href'))
-    
+        p = result.find_element(By.TAG_NAME, "p")
+        res.append({
+            'title': a.text,
+            'url': a.get_attribute('href'),
+            'description': p.text,
+        })
+
+    print(f"Results: {res}")
+
     driver.quit()
-    return res
+    return {'total': len(res), 'results': res}
+
 
 def processDocumentUrl(url):
     print("Processing " + url)
@@ -152,7 +166,8 @@ def processDocumentUrl(url):
         title = head.find('title').text
         origUrl = head.find('meta', {'property': 'og:url'})['content']
         isExternal = url != origUrl
-        keywords = head.find('meta', {'name': 'news_keywords'})['content'].split(',')
+        keywords = head.find('meta', {'name': 'news_keywords'})[
+            'content'].split(',')
 
         article = soup.find('article')
 
@@ -173,7 +188,7 @@ def processDocumentUrl(url):
             'body': "\n".join(body),
             'urls': urls
         }
-    
+
     except:
         return
 
@@ -192,6 +207,8 @@ def processDocumentUrl(url):
 #     },
 #     ...
 # ]
+
+
 def processUrls(urls):
     res = []
     for url in urls:
@@ -199,6 +216,7 @@ def processUrls(urls):
         if doc:
             res.append(doc)
     return res
+
 
 def mineNewsUrls():
     url = 'https://finance.yahoo.com/'
@@ -228,26 +246,30 @@ def mineNewsUrls():
 
     try:
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.XPATH, "//div[contains(@id, 'mrt-node-slingstoneStream')]"))
+            EC.presence_of_element_located(
+                (By.XPATH, "//div[contains(@id, 'mrt-node-slingstoneStream')]"))
         )
     except:
         print("Could not load results")
         driver.quit()
         return []
-    
+
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    last_height = driver.execute_script("return document.getElementById('slingstoneStream-0-Stream').scrollHeight")
+    last_height = driver.execute_script(
+        "return document.getElementById('slingstoneStream-0-Stream').scrollHeight")
 
     while True:
 
         # Scroll down to the bottom.
-        driver.execute_script("window.scrollBy(0, document.getElementById('slingstoneStream-0-Stream').scrollHeight);")
+        driver.execute_script(
+            "window.scrollBy(0, document.getElementById('slingstoneStream-0-Stream').scrollHeight);")
 
         # Wait to load the page.
         time.sleep(2)
 
         # Calculate new scroll height and compare with last scroll height.
-        new_height = driver.execute_script("return document.getElementById('slingstoneStream-0-Stream').scrollHeight")
+        new_height = driver.execute_script(
+            "return document.getElementById('slingstoneStream-0-Stream').scrollHeight")
 
         if new_height == last_height:
 
@@ -255,7 +277,8 @@ def mineNewsUrls():
 
         last_height = new_height
 
-    resultsDiv = driver.find_element(By.XPATH, "//div[contains(@id, 'mrt-node-slingstoneStream')]")
+    resultsDiv = driver.find_element(
+        By.XPATH, "//div[contains(@id, 'mrt-node-slingstoneStream')]")
     results = resultsDiv.find_elements(By.TAG_NAME, "li")
     filteredResults = []
     for result in results:
@@ -270,13 +293,14 @@ def mineNewsUrls():
     for result in filteredResults:
         a = result.find_element(By.TAG_NAME, "a")
         res.append(a.get_attribute('href'))
-    
+
     driver.quit()
     return res
 
+
 def mineData():
     client = db.create_client()
-    
+
     if not client.indices.exists(index="documents"):
         db.create_index(client, "documents")
 
@@ -296,6 +320,7 @@ def mineData():
                     print('Document inserted into elasticsearch')
                 urls.extend(doc['urls'])
             visited.add(url)
+
 
 # Example Usage
 if __name__ == "__main__":

@@ -1,3 +1,11 @@
+from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+import pandas as pd
+import utils.database_utils as db
 import sys
 import os
 import pickle
@@ -8,16 +16,6 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
-import utils.database_utils as db
-
-import pandas as pd
-
-from sklearn.model_selection import train_test_split
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score
-from sklearn.model_selection import GridSearchCV
 
 filename = "sentiment_model.pickle"
 
@@ -31,8 +29,11 @@ class LogisticRegressionModel:
 
     def train(self):
         df = pd.read_csv(
-            "./sentiment-training-data.csv", delimiter=",", encoding="latin-1"
+            os.path.join(os.path.dirname(__file__), "./sentiment-training-data.csv"),
+            delimiter=",",
+            encoding="latin-1",
         )
+
         df = df.rename(
             columns={
                 "neutral": "Sentiment",
