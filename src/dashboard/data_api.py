@@ -65,7 +65,7 @@ def getSentiment(documents):
     results = []
     df_data = []
     for doc in documents['results']:
-        df_data.append(doc['summary'])
+        df_data.append(doc['title'])
 
     df = pd.DataFrame(df_data, columns=["Text"])
     results = sentiment.predict(df)
@@ -80,6 +80,3 @@ def getSentiment(documents):
     else:
         print('unknown sentiment')
         return 0.5
-
-    import random
-    return random.random()
