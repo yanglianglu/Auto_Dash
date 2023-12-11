@@ -7,6 +7,7 @@ import src.models.sentiment_model as sentiment_model
 import src.models.summarization_model as summarization_model
 import src.models.topic_model as tm
 
+
 MOCK_DATA = False
 
 MOCK_DOCUMENTS = {
@@ -86,6 +87,7 @@ def getTopics(documents):
     #        total += 1
     # return [{'term': key, 'weight': value / total}
     #        for key, value in cnt.items()]
+
 
     # import random
     # words = []

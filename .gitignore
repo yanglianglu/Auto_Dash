@@ -2,3 +2,5 @@
 data/embeddings/*
 data/processed/*
 data/raw/*
+__pycache__/
+venv
