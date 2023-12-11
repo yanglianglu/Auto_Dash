@@ -7,8 +7,9 @@ from wordcloud import WordCloud
 import io
 from base64 import b64encode
 
-import dashboard.data_api as data_api
-from search.scrape_documents import processDocumentUrl
+import src.dashboard.data_api as data_api
+from src.dashboard.data_api import tm
+from src.search.scrape_documents import processDocumentUrl
 
 app = dash.Dash(__name__)
 
@@ -102,14 +103,31 @@ def update_results(n_clicks, n_clicks2, query, query2):
             result['summary'] = 'Skipped in testing mode'
 
     results.append(html.H2('Documents Found'))
-    for result in documents['results']:
-        results.append(html.Div(children=[
-            html.H2(result['title']),
-            html.A(result['url'], href=result['url']),
-            html.P(result['description']),
-            html.H3('Summarizer model output: '),
-            html.P(result['summary']),
-        ], className='searchresult'))
+    tabs = []
+    for i, result in enumerate(documents['results']):
+        if 'summary' in result:
+            tab = dcc.Tab(
+                label=f"Doc {i + 1}",
+                children=[
+                    html.Div([
+                        html.H5(result['title']),
+                        html.A(result['url'], href=result['url'], target='_blank'),
+                        html.P(result['summary'])
+                    ], className='tab-content')
+                ],
+                className='tab',
+                selected_className='tab-selected'
+            )
+            tabs.append(tab)
+
+    tab_content = dcc.Tabs(
+        tabs,
+        id='tabs',
+        value=tabs[0].label if tabs else 'tab-1',
+        className='custom-tabs',
+        parent_className='custom-tabs-container',
+        content_className='custom-tabs-content'
+    ) if tabs else html.Div()
 
     sentiment = data_api.getSentiment(documents)
     sentiment_text = ''
@@ -133,7 +151,7 @@ def update_results(n_clicks, n_clicks2, query, query2):
         ], className='wrapper')
     ]
 
-    summary = data_api.getTopics(documents)
+    data_api.getTopics(documents)
     summaryresults = []
     # print(summary)
     # for word in summary:
@@ -141,16 +159,32 @@ def update_results(n_clicks, n_clicks2, query, query2):
     #         html.Div(word['term']),
     #         html.Div(word['weight'])
     #     ]))
-    wordcloud = WordCloud(width=625, height=300, background_color='white')
-    wordcloud.fit_words({word['term']: word['weight'] for word in summary})
-    img = wordcloud.to_image()
-    image_io = io.BytesIO()
-    img.save(image_io, 'PNG')
-    summaryresults.append(html.H2('Topics'))
-    summaryresults.append(html.Img(
-        src='data:image/png;base64,' + b64encode(image_io.getvalue()).decode('ascii')))
+    # read png image file
+    from PIL import Image
+    word_cloud_per_topic = Image.open('word_cloud_per_topic.png')
+    print('word cloud', word_cloud_per_topic)
+    # convert word_cloud_per_topic image file to base64 string
+    img_bytes = io.BytesIO()
+    word_cloud_per_topic.save(img_bytes, format='PNG')
+    word_cloud_per_topic_str = b64encode(img_bytes.getvalue()).decode('ascii')
 
-    return [results, query, summaryresults, sentimentresults]
+    plot_topic_word_wordcount_weight = Image.open(
+        'plot_topic_word_wordcount_weight.png')
+    # convert word_cloud_per_topic image file to base64 string
+    img_bytes = io.BytesIO()
+    plot_topic_word_wordcount_weight.save(img_bytes, format='PNG')
+    plot_topic_word_wordcount_weight_str = b64encode(img_bytes.getvalue()).decode('ascii')
+
+    summaryresults = html.Div([
+        html.H2('Topics'),
+        html.Div([
+            html.Img(src='data:image/png;base64,' + word_cloud_per_topic_str,
+                     style={'width': '100%', 'height': 'auto', 'display': 'block'}),
+            html.Img(src='data:image/png;base64,' + plot_topic_word_wordcount_weight_str,
+                     style={'width': '100%', 'height': 'auto', 'display': 'block'})
+        ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})
+    ])
+    return [tab_content, query, summaryresults, sentimentresults]
 
 
 if __name__ == '__main__':

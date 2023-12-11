@@ -23,7 +23,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
-import utils.database_utils as db
+import src.utils.database_utils as db
 
 numOfRetries = 3
 
@@ -34,7 +34,7 @@ def initBrowser():
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size=%s" % WINDOW_SIZE)
     chrome_options.add_argument("no-sandbox")
-    chrome_options.add_extension('./adblock.crx')
+    chrome_options.add_extension('src/search/adblock.crx')
     # chrome_options.add_argument("--disable-extensions")
     driver = webdriver.Chrome(service=ChromeService(
         ChromeDriverManager().install()), options=chrome_options)
@@ -147,14 +147,15 @@ def getDocumentsUrls(keyword, n):
 
     res = []
     for result in filteredResults[:n]:
-        a = result.find_element(By.TAG_NAME, "a")
+
         try:
+            a = result.find_element(By.TAG_NAME, "a")
             p = result.find_element(By.TAG_NAME, "p")
             description = p.text
         except:
             description = ""
             print('Could not locate description')
-
+            continue
         res.append({
             'title': a.text,
             'url': a.get_attribute('href'),
@@ -239,8 +240,9 @@ def mineNewsUrls():
     while cur < numOfRetries:
         try:
             driver = initBrowser()
-        except:
+        except Exception as e:
             print("There was an issue initializing browser window")
+            print(e)
             continue
         driver.get(url)
         try:
