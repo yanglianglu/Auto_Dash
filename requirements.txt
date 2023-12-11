@@ -11,5 +11,10 @@ numpy~=1.26.1
 nltk~=3.8.1
 dash==2.14.1
 scikit-learn
+transformers~=4.35.2
+utils~=1.0.1
+requests~=2.31.0
+dash==2.14.1
+scikit-learn
 transformers
 wordcloud

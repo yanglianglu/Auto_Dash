@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 """CS410_TopicModelling.ipynb
 
@@ -25,147 +24,48 @@ import gensim.models
 from sklearn.datasets import fetch_20newsgroups
 from nltk.corpus import stopwords
 
+from wordcloud import WordCloud, STOPWORDS
+import matplotlib.colors as mcolors
+from matplotlib import pyplot as plt
+import src.preprocessing.text_preprocessing as tp
 
 nltk.download('wordnet')
 nltk.download('stopwords')
 
-def remove_special_characters_and_numbers(text):
-    # Remove special characters and numbers using regular expressions
-    cleaned_text = re.sub(r'[^A-Za-z\s]', '', text)  # Remove special characters
-    cleaned_text = re.sub(r'\b\d+\b', '', cleaned_text)  # Remove standalone numbers
 
-    return cleaned_text
-
-class Tokenizer:
-    def __init__(self):
-        self._tokenizer = nltk.RegexpTokenizer(r'\w+')
-
-    def tokenize(self, document: str) -> list:
-        return self._tokenizer.tokenize(document)
-
-class Lemmatizer:
-    def __init__(self):
-        self._lemmatizer = WordNetLemmatizer()
-        self._tokenizer = Tokenizer()
-        self._stopwords = set(stopwords.words("english"))
-        self._custom_stop_words = ['the', 'and', 'is', 'in', 'it', 'of', 'for', 'to', 'with', 'on']
-        self._stop_words.extend(['from', 'subject', 're', 'edu', 'use', 'not', 'would', 'say', 'could', '_', 'be', 'know', 'good', 'go', 'get', 'do', 'done', 'try', 'many', 'some', 'nice', 'thank', 'think', 'see', 'rather', 'easy', 'easily', 'lot', 'lack', 'make', 'want', 'seem', 'run', 'need', 'even', 'right', 'line', 'even', 'also', 'may', 'take', 'come'])
+# Load text data
+# docs = fetch_20newsgroups(subset='all',  remove=('headers', 'footers', 'quotes'))['data']
 
 
-    def _tokenize(self, document: str) -> list:
-        return self._tokenizer.tokenize(document)
+# Task 1: Initiate a new topic model
+def fit_topic_model(docs):
+    # Lemmatize document from your text data
+    lemmatizer = tp.Lemmatizer()
+    docss = lemmatizer.lemmatize_document(docs)
 
-    def lemmatize_word(self, word: str, pos=None) -> str:
-        return self._lemmatizer.lemmatize(word, pos) if pos is not None else self._lemmatizer.lemmatize(word)
+    # Create a corpus from a list of texts
+    common_dictionary = Dictionary(docss)
+    common_corpus = [common_dictionary.doc2bow(text) for text in docss]
 
-    def lemmatize_sentence(self, sentence: str, pos=None) -> str:
-        result = []
-        sentence = sentence.lower()
-        for word in self._tokenize(sentence):
-            word = remove_special_characters_and_numbers(word)
-            if word.lower() in self._stopwords or word.lower() in self._custom_stop_words or len(word) < 3:
-                continue
-            if pos is not None:
-                result.append(self.lemmatize_word(word, pos))
-            else:
-                result.append(self.lemmatize_word(word))
-        return result
+    # Train the model on the corpus.
+    # corpus has to be provided as a keyword argument, as they are passed through to the children.
+    elda = gensim.models.LdaModel(corpus=common_corpus,
+                                  id2word=common_dictionary,
+                                  num_topics=4,
+                                  random_state=100,
+                                  # update_every=1,
+                                  # chunksize=100,
+                                  passes=10,
+                                  # alpha='auto',
+                                  per_word_topics=False)
+    return elda, common_corpus, docss
 
-    def lemmatize_document(self, document: list) -> str:
-        result = []
-        for line in document:
-            result.append(self.lemmatize_sentence(line))
-        return result
 
-message = "Have no fear of perfection. You'll never reach it 🔥"
-tokenizer = Tokenizer()
-print(tokenizer.tokenize(message))
-
-message = "Have no fear of perfection. You'll never reach it 🔥"
-lemmatizer = Lemmatizer()
-print(lemmatizer.lemmatize_sentence(message))
-
-## Load text data
-docs = fetch_20newsgroups(subset='all',  remove=('headers', 'footers', 'quotes'))['data']
-
-## import pandas as pd
-## df = pd.read_json('https://raw.githubusercontent.com/selva86/datasets/master/newsgroups.json')
-## df = df.loc[df.target_names.isin(['soc.religion.christian', 'rec.sport.hockey', 'talk.politics.mideast', 'rec.motorcycles']) , :]
-
-# Lemmatize document from your text data
-lemmatizer = Lemmatizer()
-docss = lemmatizer.lemmatize_document(docs)
-
-# Create a dictionary from a list of texts
-# Create a corpus from a list of texts
-common_dictionary = Dictionary(docss)
-common_corpus = [common_dictionary.doc2bow(text) for text in docss]
-
-# Train the model on the corpus.
-# corpus has to be provided as a keyword argument, as they are passed through to the children.
-elda = gensim.models.LdaModel(corpus=common_corpus,
-                                           id2word=common_dictionary,
-                                           num_topics=20,
-                                           random_state=100,
-                                           #update_every=1,
-                                           #chunksize=100,
-                                           passes=10,
-                                           #alpha='auto',
-                                           per_word_topics=False)
-
-# Get the topics and their top words
-topics = elda.print_topics(num_words= 10)
-for topic in topics:
-    print(topic)
-
-# Create a new folder to store model
-import os
-folder_path = '/content/my_topic_model'  # Replace 'my_folder' with the desired folder name
-os.makedirs(folder_path, exist_ok=True)
-
-# Save the topic model to model_path
-model_path = folder_path + "/lda_model"
-elda.save(model_path)
-
-# Get the topic modelling for a specific document
-document = docss[0]
-topic_distribution = elda[common_dictionary.doc2bow(document)]
-print(topic_distribution)
-
-elda.get_topic_terms(0)
-
-len(common_dictionary.token2id)
-
-len(docss[0])
-
-row_list = elda[common_corpus[0]]
-
-row = sorted(row_list, key=lambda x: (x[1]), reverse=True)
-
-row
-
-sent_topics_df = pd.DataFrame()
-for j, (topic_num, prop_topic) in enumerate(row):
-           if j == 0:  # => dominant topic
-               wp = elda.show_topic(topic_num)
-               topic_keywords = ", ".join([word for word, prop in wp])
-               print(topic_keywords)
-               sent_topics_df = sent_topics_df.append(pd.Series([int(topic_num), round(prop_topic,4), topic_keywords]), ignore_index=True)
-           else:
-               break
-
-sent_topics_df
-
-elda.get_topics()[0]
-
-elda.show_topic(topic_num)
-
-topic_num
-
-elda.get_document_topics()
-
-# the dominant topic and its percentage contribution in each document
-def format_topics_sentences(ldamodel=None, corpus=corpus, texts=data):
+# Task 2: Topics and its list of documents
+# One dominant topic per document
+# input: [common_corpus, docss, fitted_topic_model]
+# output: [topic_id, list of doc ids]
+def find_topics_document_unique(corpus, texts, ldamodel=None):
     # Init output
     sent_topics_df = pd.DataFrame()
 
@@ -179,23 +79,155 @@ def format_topics_sentences(ldamodel=None, corpus=corpus, texts=data):
             if j == 0:  # => dominant topic
                 wp = ldamodel.show_topic(topic_num)
                 topic_keywords = ", ".join([word for word, prop in wp])
-                sent_topics_df = sent_topics_df.append(pd.Series([int(topic_num), round(prop_topic,4), topic_keywords]), ignore_index=True)
+                sent_topics_df = pd.concat(
+                    [sent_topics_df, pd.Series([i, int(topic_num), round(prop_topic, 4), topic_keywords]).to_frame().T])
             else:
                 break
-    sent_topics_df.columns = ['Dominant_Topic', 'Perc_Contribution', 'Topic_Keywords']
-
+    sent_topics_df.reset_index(inplace=True, drop=True)
+    sent_topics_df.columns = ['Doc_ID', 'Dominant_Topic', 'Percent_Contribution', 'Topic_Keywords']
     # Add original text to the end of the output
     contents = pd.Series(texts)
-    sent_topics_df = pd.concat([sent_topics_df, contents], axis=1)
-    return(sent_topics_df)
 
-# Creating Parameters for pyldavis
-import pyLDAvis.gensim
+    sent_topics_df = pd.concat([sent_topics_df, contents], axis=1).groupby("Dominant_Topic")["Doc_ID"].apply(
+        list).reset_index()
+    # print(sent_topics_df)
+    return sent_topics_df
 
-# Initializing pyldavis
-lda_panel = pyLDAvis.gensim.prepare(topic_model=elda, corpus=common_corpus, dictionary=common_dictionary)
 
-# Displaying pyldavis
-pyLDAvis.enable_notebook()
-pyLDAvis.display(lda_panel)
+# Task 3: Topics and its list of documents
+# Multiple topics per document if percentage contribution > 0.1
+# input: [common_corpus, docss, fitted_topic_model]
+# output: [topic_id, list of doc ids]
+def find_topics_document_multiple(corpus, texts, ldamodel=None):
+    # Init output
+    sent_topics_df = pd.DataFrame()
 
+    # Get main topic in each document
+    for i, row_list in enumerate(ldamodel[corpus]):
+        row = row_list[0] if ldamodel.per_word_topics else row_list
+        # print(row)
+        row = sorted(row, key=lambda x: (x[1]), reverse=True)
+        # Get the Dominant topic, Perc Contribution and Keywords for each document
+        for j, (topic_num, prop_topic) in enumerate(row):
+            if prop_topic > 0.1:  # => dominant topic
+                wp = ldamodel.show_topic(topic_num)
+                topic_keywords = ", ".join([word for word, prop in wp])
+                sent_topics_df = pd.concat(
+                    [sent_topics_df, pd.Series([i, int(topic_num), round(prop_topic, 4), topic_keywords]).to_frame().T])
+            else:
+                break
+    sent_topics_df.reset_index(inplace=True, drop=True)
+    sent_topics_df.columns = ['Doc_ID', 'Dominant_Topic', 'Percent_Contribution', 'Topic_Keywords']
+    # Add original text to the end of the output
+    contents = pd.Series(texts)
+
+    sent_topics_df = pd.concat([sent_topics_df, contents], axis=1).groupby("Dominant_Topic")["Doc_ID"].apply(
+        list).reset_index()
+    # print(sent_topics_df)
+    return sent_topics_df
+
+
+# a,b,c = fit_topic_model(docs)
+# result = find_topics_document_unique(b, c, a)
+# result
+
+
+# Task 4. Plot Wordcloud of Top N words in each topic
+def plot_word_cloud_word_weight_per_topic(ldamodel, figurename ='word_cloud_per_topic.png'):
+    cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]  # more colors: 'mcolors.XKCD_COLORS'
+
+    cloud = WordCloud(background_color='white',
+                      width=2500,
+                      height=1800,
+                      max_words=10,
+                      colormap='tab10',
+                      color_func=lambda *args, **kwargs: cols[i],
+                      prefer_horizontal=1.0)
+
+    topics = ldamodel.show_topics(4, formatted=False)
+
+    fig, axes = plt.subplots(2, 2, figsize=(10, 10), sharex=True, sharey=True)
+
+    for i, ax in enumerate(axes.flatten()):
+        fig.add_subplot(ax)
+        topic_words = dict(topics[i][1])
+        cloud.generate_from_frequencies(topic_words, max_font_size=300)
+        plt.gca().imshow(cloud)
+        plt.gca().set_title('Topic ' + str(i), fontdict=dict(size=16))
+        plt.gca().axis('off')
+
+    plt.subplots_adjust(wspace=0, hspace=0)
+    plt.axis('off')
+    plt.margins(x=0, y=0)
+    plt.tight_layout()
+    plt.savefig(figurename)
+
+
+# plot_word_cloud_word_weight_per_topic(a)
+# topics = a.show_topics(num_words=10, formatted=False)
+
+
+# Task 5: Word Count of Top N words in each topic among topic related documents
+def get_topic_word_weight_related_document(ldamodel, texts, doc_list_per_topic):
+    topics = ldamodel.show_topics(formatted=False)
+    out = []
+    topic_set = set([])
+    for i, topic in topics:
+        data_flat = [w for j, w_list in enumerate(texts) if j in doc_list_per_topic.iloc[i, 1] for w in w_list]
+        counter = Counter(data_flat)
+        for word, weight in topic:
+            out.append([word, i, weight, counter[word]])
+            topic_set.add(i)
+
+    df = pd.DataFrame(out, columns=['word', 'topic_id', 'importance', 'word_count'])
+    return df, topic_set
+
+
+# df, topic_set = get_topic_word_weight_related_document(a, c, result)
+
+
+# Task 6: Word Count of Top N words in each topic
+def get_topic_word_weight(ldamodel, texts, doc_list_per_topic):
+    topics = ldamodel.show_topics(formatted=False)
+    data_flat = [w for w_list in texts for w in w_list]
+    counter = Counter(data_flat)
+
+    out = []
+    topic_set = set([])
+    for i, topic in topics:
+        for word, weight in topic:
+            out.append([word, i, weight, counter[word]])
+            topic_set.add(i)
+
+    df = pd.DataFrame(out, columns=['word', 'topic_id', 'importance', 'word_count'])
+    return df, topic_set
+
+
+# Task 7: Barplot Word Count and Weights of Topic Keywords
+# input: output of get_topic_word_weight, get_topic_word_weight_related_document
+def plot_topic_word_wordcount_weight(df, topic_set):
+    fig, axes = plt.subplots(2, 2, figsize=(10, 6), sharey=True, dpi=160)
+    cols = [color for name, color in mcolors.TABLEAU_COLORS.items()]
+    for i, ax in enumerate(axes.flatten()):
+        ax.bar(x='word', height="word_count", data=df.loc[df.topic_id == list(topic_set)[i], :], color=cols[i],
+               width=0.5, alpha=0.3, label='Word Count')
+        ax_twin = ax.twinx()
+        ax_twin.bar(x='word', height="importance", data=df.loc[df.topic_id == list(topic_set)[i], :], color=cols[i],
+                    width=0.2, label='Weights')
+        ax.set_ylabel('Word Count', color=cols[i])
+        left_ylim = df['importance'].max() + 0.02
+        right_ylim = df['word_count'].max() + 100
+        ax_twin.set_ylim(0, left_ylim)
+        ax.set_ylim(0, right_ylim)
+        ax.set_title('Topic: ' + str(i), color=cols[i], fontsize=16)
+        ax.tick_params(axis='y', left=True)
+        ax.set_xticklabels(df.loc[df.topic_id == i, 'word'], rotation=30, horizontalalignment='right')
+        ax.legend(loc='upper left');
+        ax_twin.legend(loc='upper right')
+
+    fig.tight_layout(w_pad=2)
+    fig.suptitle('Word Count and Importance of Topic Keywords', fontsize=22, y=1.05)
+    plt.show()
+
+
+# plot_topic_word_wordcount_weight(df, topic_set)
