@@ -68,14 +68,26 @@ def getSummarization(result):
 
 
 def getTopics(documents):
-    docs = []
-    for result in documents['results']:
-        if result["scraped"] is None:
+    bodys = []
+    for i in documents['results']:
+        url = i['url']
+        body = processDocumentUrl(url)['body']
+        if body is []:
             continue
-        docs.append(result["scraped"]['body'])
-    ldam, common_corpus, texts = tm.fit_topic_model(docs)
-    topics = ldam.show_topics(4, formatted=False)
-    return [{'topic_id': i, 'word_weight': [{'term': k[0], 'weight': k[1]} for k in pairs]} for i, pairs in topics]
+        bodys.append(body)
+
+    model, corpus, texts = tm.fit_topic_model(bodys)
+    tm.plot_word_cloud_word_weight_per_topic(model)
+    # df, topic_set = tm.get_topic_word_weight(model, bodys)
+    # tm.plot_topic_word_wordcount_weight(df, topic_set)
+    # docs = []
+    # for result in documents['results']:
+    #     if result["scraped"] is None:
+    #         continue
+    #     docs.append(result["scraped"]['body'])
+    # ldam, common_corpus, texts = tm.fit_topic_model(docs)
+    # topics = ldam.show_topics(4, formatted=False)
+    # return [{'topic_id': i, 'word_weight': [{'term': k[0], 'weight': k[1]} for k in pairs]} for i, pairs in topics]
 
     # cnt = Counter()
     # total = 0
