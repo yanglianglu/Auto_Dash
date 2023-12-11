@@ -1,4 +1,3 @@
-import utils.database_utils as db
 import time
 
 from selenium import webdriver
@@ -24,6 +23,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
+import utils.database_utils as db
 
 numOfRetries = 3
 
@@ -34,7 +34,8 @@ def initBrowser():
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size=%s" % WINDOW_SIZE)
     chrome_options.add_argument("no-sandbox")
-    chrome_options.add_argument("--disable-extensions")
+    chrome_options.add_extension('./adblock.crx')
+    # chrome_options.add_argument("--disable-extensions")
     driver = webdriver.Chrome(service=ChromeService(
         ChromeDriverManager().install()), options=chrome_options)
     return driver
@@ -64,6 +65,12 @@ def getDocumentsUrls(keyword, n):
         except:
             print("There was an issue initializing browser window")
             continue
+
+        # Allow adblock to be installed
+        print("Installing adblock")
+        driver.get("https://www.google.com")
+        time.sleep(5)
+        print("Opening yahoo finance")
         driver.get(url)
         try:
             WebDriverWait(driver, 5).until(
@@ -93,6 +100,7 @@ def getDocumentsUrls(keyword, n):
         By.XPATH, "//form[contains(@action, '/quote')]")
     searchBarInput = searchBar.find_element(By.TAG_NAME, "input")
     searchBarInput.send_keys(keyword)
+    time.sleep(2)
     searchBarButton = searchBar.find_element(
         By.ID, "header-desktop-search-button")
     searchBarButton.click()
@@ -140,11 +148,17 @@ def getDocumentsUrls(keyword, n):
     res = []
     for result in filteredResults[:n]:
         a = result.find_element(By.TAG_NAME, "a")
-        p = result.find_element(By.TAG_NAME, "p")
+        try:
+            p = result.find_element(By.TAG_NAME, "p")
+            description = p.text
+        except:
+            description = ""
+            print('Could not locate description')
+
         res.append({
             'title': a.text,
             'url': a.get_attribute('href'),
-            'description': p.text,
+            'description': description,
         })
 
     print(f"Results: {res}")
@@ -324,4 +338,4 @@ def mineData():
 
 # Example Usage
 if __name__ == "__main__":
-    mineData()
+    getDocumentsUrls('apple', 30)
