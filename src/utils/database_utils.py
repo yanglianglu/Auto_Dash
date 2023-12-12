@@ -80,22 +80,12 @@ def delete_index(client, index_name):
 if __name__ == "__main__":
     client = create_client()
     # Create an index
-    print(create_index(client, "my_index"))
-
-    # Index a document
-    print(index_document(client, "my_index", "my_document_id", {"foo": "foo", "bar": "bar"}))
-
-    # Get a document
-    print(get_document(client, "my_index", "my_document_id"))
-
-    # Search documents
-    print(search_documents(client, "my_index", {"match": {"foo": "foo"}}))
-
-    # Update a document
-    print(update_document(client, "my_index", "my_document_id", {"new_field": "new_value"}))
-
-    # Delete a document
-    print(delete_document(client, "my_index", "my_document_id"))
-
-    # Delete an index
-    print(delete_index(client, "my_index"))
+    # search document that body, title or keywords contains "bank"
+    query = {
+        "multi_match": {
+            "query": "bank",
+            "fields": ["body", "title", "keywords"]
+        }
+    }
+    docs = search_documents(client, "documents", query)
+    print(docs)

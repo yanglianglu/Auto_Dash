@@ -80,9 +80,9 @@ def update_results(n_clicks, n_clicks2, query, query2):
     elif ctx.triggered_id == 'search-btn2':
         query = query2
 
-    print(f'getDocuments {query}')
+    # print(f'getDocuments {query}')
     documents = data_api.getDocuments(query)
-    print(f'documents {documents}')
+    # print(f'documents {documents}')
 
     results = []
 
@@ -90,16 +90,15 @@ def update_results(n_clicks, n_clicks2, query, query2):
     first_scraped = None
     for result in documents['results']:
         if first:
-            print(f'scraping URL: {result["url"]}')
-            result['scraped'] = processDocumentUrl(result['url'])
-            first_scraped = result['scraped']
-            print(f'scraped doc: {result["scraped"]}')
-            result['summary'] = data_api.getSummarization(result)
+            # print(f'scraping URL: {result["url"]}')
+            first_scraped = result['body']
+            # print(f'scraped doc: {result["scraped"]}')
+            result['summary'] = data_api.getSummarization(result['body'])
             if data_api.MOCK_DATA:
                 first = False
         else:
             # during testing, avoid sending too may requests
-            result['scraped'] = first_scraped
+            result['body'] = first_scraped
             result['summary'] = 'Skipped in testing mode'
 
     results.append(html.H2('Documents Found'))
