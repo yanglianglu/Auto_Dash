@@ -90,32 +90,6 @@ def getTopics(documents):
     tm.plot_word_cloud_word_weight_per_topic(model)
     df, topic_set = tm.get_topic_word_weight(model, bodys)
     tm.plot_topic_word_wordcount_weight(df, topic_set)
-    # docs = []
-    # for result in documents['results']:
-    #     if result["scraped"] is None:
-    #         continue
-    #     docs.append(result["scraped"]['body'])
-    # ldam, common_corpus, texts = tm.fit_topic_model(docs)
-    # topics = ldam.show_topics(4, formatted=False)
-    # return [{'topic_id': i, 'word_weight': [{'term': k[0], 'weight': k[1]} for k in pairs]} for i, pairs in topics]
-
-    # cnt = Counter()
-    # total = 0
-    # for result in documents['results']:
-    #    if result["scraped"] is None:
-    #        continue
-    #    for keyword in result["scraped"]['keywords']:
-    #        cnt[keyword] += 1
-    #        total += 1
-    # return [{'term': key, 'weight': value / total}
-    #        for key, value in cnt.items()]
-
-
-    # import random
-    # words = []
-    # for i in range(5):
-    #     words.append({'term': f'{query}{i+1}', 'weight': random.random()})
-    # return words
 
 
 sentiment = sentiment_model.LogisticRegressionModel() if not MOCK_DATA else None
