@@ -6,9 +6,9 @@ from src.search.scrape_documents import getDocumentsUrls, processDocumentUrl
 import src.models.sentiment_model as sentiment_model
 import src.models.summarization_model as summarization_model
 import src.models.topic_model as tm
-
-
+from  src.utils import database_utils as db
 MOCK_DATA = False
+client = db.create_client()
 
 MOCK_DOCUMENTS = {
     'total': 10,
@@ -47,65 +47,49 @@ MOCK_DOCUMENTS = {
 
 
 def getDocuments(query):
-    if not MOCK_DATA:
-        return getDocumentsUrls(query, 10)
-    # in mock data, still simulate the waiting time
-    time.sleep(1)
-    return MOCK_DOCUMENTS
+    query = {
+        "multi_match": {
+            "query": query,
+            "fields": ["body", "title", "keywords"]
+        }
+    }
+    response = db.search_documents(client, "documents", query)
+    response_data = response['hits']['hits']
 
+    # Extracting the desired fields
+    extracted_data = []
+    for item in response_data:
+        extracted_doc = {
+            'url': item['_source']['base_url'],
+            'title': item['_source']['title'],
+            'body': item['_source']['body']
+        }
+        extracted_data.append(extracted_doc)
+    return {'total': len(extracted_data), 'results': extracted_data}
 
 summarizer = summarization_model.init_model()
 
 
 def getSummarization(result):
-    if result["scraped"] is None:
-        return 'Failed to scrape'
     # return 'summary'
     summary = summarization_model.inference(
-        summarizer, result["scraped"]['body'])
-    print(f'summary: {summary}')
+        summarizer, result)
+    # print(f'summary: {summary}')
     return summary
 
 
 def getTopics(documents):
     bodys = []
     for i in documents['results']:
-        url = i['url']
-        body = processDocumentUrl(url)['body']
+        body = i['body']
         if body is []:
             continue
         bodys.append(body)
 
     model, corpus, texts = tm.fit_topic_model(bodys)
     tm.plot_word_cloud_word_weight_per_topic(model)
-    # df, topic_set = tm.get_topic_word_weight(model, bodys)
-    # tm.plot_topic_word_wordcount_weight(df, topic_set)
-    # docs = []
-    # for result in documents['results']:
-    #     if result["scraped"] is None:
-    #         continue
-    #     docs.append(result["scraped"]['body'])
-    # ldam, common_corpus, texts = tm.fit_topic_model(docs)
-    # topics = ldam.show_topics(4, formatted=False)
-    # return [{'topic_id': i, 'word_weight': [{'term': k[0], 'weight': k[1]} for k in pairs]} for i, pairs in topics]
-
-    # cnt = Counter()
-    # total = 0
-    # for result in documents['results']:
-    #    if result["scraped"] is None:
-    #        continue
-    #    for keyword in result["scraped"]['keywords']:
-    #        cnt[keyword] += 1
-    #        total += 1
-    # return [{'term': key, 'weight': value / total}
-    #        for key, value in cnt.items()]
-
-
-    # import random
-    # words = []
-    # for i in range(5):
-    #     words.append({'term': f'{query}{i+1}', 'weight': random.random()})
-    # return words
+    df, topic_set = tm.get_topic_word_weight(model, bodys)
+    tm.plot_topic_word_wordcount_weight(df, topic_set)
 
 
 sentiment = sentiment_model.LogisticRegressionModel() if not MOCK_DATA else None

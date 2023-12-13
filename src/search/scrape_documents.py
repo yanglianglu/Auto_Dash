@@ -1,18 +1,16 @@
+import pickle
 import time
 
-from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
-from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
-
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 from bs4 import BeautifulSoup
 import requests
-
 
 import sys
 import os
@@ -21,6 +19,8 @@ import os
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
+# find parent directory of the parent directory.
+parent = os.path.dirname(parent)
 sys.path.append(parent)
 
 import src.utils.database_utils as db
@@ -49,120 +49,72 @@ def initBrowser():
 #     'https://finance.yahoo.com/news/iphone-assembler-hon-hai-dives-010601477.html',
 #     'https://finance.yahoo.com/m/05189731-ff16-33e1-b077-dfead8ad1cb9/paypal-s-new-boss.html',
 # ]
-def getDocumentsUrls(keyword, n):
-    """
-    :param string keyword: keyword to search
-    :param int n: number of docs to return
-
-    """
-
+def getDocumentsUrls(keyword, n, numOfRetries=3):
     url = "https://finance.yahoo.com/"
-    cur = 0
+    driver = initBrowser()  # Assuming initBrowser() is defined elsewhere
 
-    while cur < numOfRetries:
+    for _ in range(numOfRetries):
         try:
-            driver = initBrowser()
-        except:
-            print("There was an issue initializing browser window")
-            continue
-
-        # Allow adblock to be installed
-        print("Installing adblock")
-        driver.get("https://www.google.com")
-        time.sleep(5)
-        print("Opening yahoo finance")
-        driver.get(url)
-        try:
-            WebDriverWait(driver, 5).until(
-                EC.presence_of_element_located((By.ID, "header-search-form"))
-            )
+            driver.get(url)
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "header-search-form")))
             break
-        except:
-            cur += 1
-            print("Could not load " + url + ", retrying")
-            driver.close()
-
-    if cur == numOfRetries:
-        print("Could not load " + url + ", exiting")
+        except Exception as e:
+            print(f"Attempt to load {url} failed: {e}")
+        else:
+            print(f"Loaded {url} successfully.")
+            break
+    else:  # This block executes if the loop completes without breaking
+        print(f"Could not load {url} after {numOfRetries} retries, exiting.")
         driver.quit()
         return []
 
+    # Search for the keyword
     try:
+        searchBar = driver.find_element(By.XPATH, "//form[contains(@action, '/quote')]")
+        searchBarInput = searchBar.find_element(By.TAG_NAME, "input")
+        searchBarInput.send_keys(keyword)
+        searchBarButton = searchBar.find_element(By.ID, "header-desktop-search-button")
+        searchBarButton.click()
+
         WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.ID, "header-search-form"))
+            EC.presence_of_element_located((By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]"))
         )
-    except:
-        print("Could not load yahoo finace")
+    except Exception as e:
+        print(f"Search failed: {e}")
         driver.quit()
         return []
 
-    searchBar = driver.find_element(
-        By.XPATH, "//form[contains(@action, '/quote')]")
-    searchBarInput = searchBar.find_element(By.TAG_NAME, "input")
-    searchBarInput.send_keys(keyword)
-    time.sleep(2)
-    searchBarButton = searchBar.find_element(
-        By.ID, "header-desktop-search-button")
-    searchBarButton.click()
-
-    try:
-        WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located(
-                (By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]"))
-        )
-    except:
-        print("Could not load results")
-        driver.quit()
-        return []
-
-    resultsDiv = driver.find_element(
-        By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]")
+    # Fetch results
+    resultsDiv = driver.find_element(By.XPATH, "//div[contains(@id, 'mrt-node-quoteNewsStream')]")
     results = resultsDiv.find_elements(By.TAG_NAME, "li")
-    filteredResults = []
-    for result in results:
-        try:
-            result.find_element(By.XPATH, ".//a[text()='Ad']")
-        except:
-            filteredResults.append(result)
 
-    prev = 0
+    filteredResults = [result for result in results if not result.find_elements(By.XPATH, ".//a[text()='Ad']")]
+
+    # Scroll and fetch more results if necessary
     while len(filteredResults) < n:
-        print("{} urls found".format(len(filteredResults)))
-        if (prev == len(filteredResults)):
-            print("Maximum number of documents found related to " + keyword)
-            break
-        prev = len(filteredResults)
         driver.execute_script("arguments[0].scrollIntoView();", results[-1])
-        time.sleep(1)
-
+        time.sleep(1)  # Necessary for dynamic loading of content
         results = resultsDiv.find_elements(By.TAG_NAME, "li")
-        filteredResults = []
-        for result in results:
-            try:
-                result.find_element(By.XPATH, ".//a[text()='Ad']")
-            except:
-                filteredResults.append(result)
+        filteredResults = [result for result in results if not result.find_elements(By.XPATH, ".//a[text()='Ad']")]
 
-    print("{} urls found".format(len(filteredResults)))
+        if len(filteredResults) == prev_len:  # No new results found
+            print("No more documents found related to the keyword.")
+            break
+        prev_len = len(filteredResults)
 
+    # Extract URLs and descriptions
     res = []
     for result in filteredResults[:n]:
-
         try:
             a = result.find_element(By.TAG_NAME, "a")
             p = result.find_element(By.TAG_NAME, "p")
-            description = p.text
-        except:
-            description = ""
-            print('Could not locate description')
-            continue
-        res.append({
-            'title': a.text,
-            'url': a.get_attribute('href'),
-            'description': description,
-        })
-
-    print(f"Results: {res}")
+            res.append({
+                'title': a.text,
+                'url': a.get_attribute('href'),
+                'description': p.text,
+            })
+        except Exception as e:
+            print(f"Error retrieving information from a result: {e}")
 
     driver.quit()
     return {'total': len(res), 'results': res}
@@ -170,7 +122,7 @@ def getDocumentsUrls(keyword, n):
 
 def processDocumentUrl(url):
     print("Processing " + url)
-    r = requests.get(url)
+    r = requests.get(url, headers={'User-Agent': 'Custom'})
     if r.status_code != 200:
         print('Cannot open url')
         return
@@ -206,6 +158,7 @@ def processDocumentUrl(url):
 
     except:
         return
+
 
 # Given a list of urls, process the urls and return a list of documents
 # [
@@ -288,7 +241,6 @@ def mineNewsUrls():
             "return document.getElementById('slingstoneStream-0-Stream').scrollHeight")
 
         if new_height == last_height:
-
             break
 
         last_height = new_height
@@ -340,4 +292,4 @@ def mineData():
 
 # Example Usage
 if __name__ == "__main__":
-    getDocumentsUrls('apple', 30)
+    mineData()
