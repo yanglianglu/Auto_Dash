@@ -35,7 +35,6 @@ AutoDash is a comprehensive tool for scraping financial news articles from Yahoo
      ```
    - Wait for few minutes for the data to be preprocessed and stored in Elasticsearch.
 4. **Run the Application**:
-   - Use the `mineData()` function to start scraping articles and populating the database.
    - Run the following command to start the web dashboard:
      ```sh
      python main.py
