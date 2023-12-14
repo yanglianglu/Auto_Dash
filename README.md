@@ -1,5 +1,7 @@
 # AutoDash ReadMe
 
+## Video Demo https://www.youtube.com/watch?v=OZF0yScFogU&t=15s
+
 ## Overview
 AutoDash is a comprehensive tool for scraping financial news articles from Yahoo Finance and conducting sentiment analysis on the collected data. It is designed to automatically retrieve news articles, process the content, and store the structured data in an Elasticsearch database for further analysis and visualization.
 
@@ -26,9 +28,12 @@ AutoDash is a comprehensive tool for scraping financial news articles from Yahoo
      ```
 
 3. **Set up Elasticsearch**:
-   - Install Elasticsearch and run it on the default port (9200).
-   - Configure the Elasticsearch credentials and update the `database_utils.py` accordingly.
-   - 
+   - Open Docker Desktop and run docker-compose up -d
+   - Preprocess the data and store it in Elasticsearch:
+     ```sh
+     python src/search/scrape_documents.py
+     ```
+   - Wait for few minutes for the data to be preprocessed and stored in Elasticsearch.
 4. **Run the Application**:
    - Use the `mineData()` function to start scraping articles and populating the database.
    - Run the following command to start the web dashboard:
